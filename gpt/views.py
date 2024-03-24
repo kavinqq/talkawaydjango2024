@@ -36,6 +36,7 @@ class ChatWithGPTAPIView(GenericAPIView):
             scenario = ser.validated_data.get("scenario")
             input_text = ser.validated_data.get("input_text")
         except serializers.ValidationError as e:
+            logger.info(e.detail)
             return Response(e.detail, status=HTTP_400_BAD_REQUEST)
 
         # 持續談話
@@ -69,15 +70,23 @@ class ChatWithGPTAPIView(GenericAPIView):
             )
         else:
             # 替代情景中的詞彙
-            scenario = scenario.replace("想像你", "想像我").replace("想像", "想像我")
+            # scenario = scenario.replace("想像你", "想像我").replace("想像", "想像我")
+            # logger.info(f"{scenario=}")
             
             # 詢問條件
-            request_condition = "1.扮演這位(第三人) 2.前面不要加扮演的角色名字 3.講一句話開始談話 4.請用英文"
+            request_condition = f"""
+               I'm providing a scenario for a simulated conversation,
+               and I would like to chat with you based on this scenario.
+               However, I want you to randomly choose one of the roles in the scenario
+               and initiate the conversation from that perspective.
+               Please start the conversation with a single opening line from the chosen role's viewpoint, in English.  
+               Final, don't need to specify who speak just chat like a person.
+            """
 
             messages = [
                 {
                     "role": "system",
-                    "content": f"{scenario}。{request_condition}"
+                    "content": f"{scenario}. {request_condition}"
                 }
             ]
             
@@ -97,7 +106,8 @@ class ChatWithGPTAPIView(GenericAPIView):
 
         response = client.chat.completions.create(
             model=self.chat_gpt_model,
-            messages=messages
+            messages=messages,
+            max_tokens=100
         )
 
         # 解析回傳的結果

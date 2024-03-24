@@ -75,7 +75,7 @@ WSGI_APPLICATION = 'talkaway.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 if PROD:
-    DATABASES = POSTGRESQL_DATABASES
+    DATABASES = MYSQL_DATABASE
 else:
     DATABASES = {
         'default': {
