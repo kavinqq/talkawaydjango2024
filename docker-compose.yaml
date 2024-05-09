@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:8.0
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 66206620
+      MYSQL_DATABASE: talkaway
+      MYSQL_USER: talkaway_admin
+      MYSQL_PASSWORD: talkaway@2024
+    restart: always
+
+  web:
+    build: .
+    volumes:
+      - .:/var/www/django/talkaway
+      - logs:/var/www/django/log/talkaway
+      - static_volume:/var/www/django/talkaway/collected_static
+    ports:
+      - "8068:8068"
+    depends_on:
+      - db
+      - nginx
+
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/var/www/django/talkaway/collected_static
+    ports:
+      - "80:80"       
+
+volumes:
+  db_data:
+  logs:
+  static_volume:

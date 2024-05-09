@@ -11,6 +11,7 @@ except ImportError:
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = Path(__file__).resolve().parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -21,7 +22,7 @@ SECRET_KEY = 'django-insecure-3-q9iyv29ki$p*+#s&tkq$y$y34-qe+i=d$4jmb11&74(wi(az
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -74,7 +75,7 @@ WSGI_APPLICATION = 'talkaway.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-if PROD:
+if DEBUG_DATABASE:
     DATABASES = MYSQL_DATABASE
 else:
     DATABASES = {
@@ -117,7 +118,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')  # 改為 collected_static 或其他非 'static' 的目錄
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),  # 這是你的原始靜態文件目錄
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
