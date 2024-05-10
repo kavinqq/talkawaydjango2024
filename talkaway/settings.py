@@ -119,10 +119,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')  # 改為 collected_static 或其他非 'static' 的目錄
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # 這是你的原始靜態文件目錄
-]
+STATIC_ROOT = '/var/www/django/talkaway/collected_static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

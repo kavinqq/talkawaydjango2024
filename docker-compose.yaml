@@ -15,23 +15,28 @@ services:
   web:
     build: .
     volumes:
-      - .:/var/www/django/talkaway
       - logs:/var/www/django/log/talkaway
-      - static_volume:/var/www/django/talkaway/collected_static
+      - ./static:/var/www/django/talkaway/collected_static
     ports:
       - "8068:8068"
     depends_on:
       - db
-      - nginx
+
 
   nginx:
+    container_name: nginx-container
     build: ./nginx
+    restart: always
     volumes:
-      - static_volume:/var/www/django/talkaway/collected_static
+      - ./log:/var/log/nginx
+      # 專案的的下一層會建立static 對應到 docker內的 colleted_static
+      - ./static:/var/www/django/talkaway/collected_static
     ports:
       - "80:80"       
+    depends_on:
+      - web
 
 volumes:
   db_data:
   logs:
-  static_volume:
+  static:

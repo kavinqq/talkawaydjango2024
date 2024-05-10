@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 
 urlpatterns = [
@@ -8,3 +9,4 @@ urlpatterns = [
     path('gpt/', include('gpt.urls')),
     path('api-auth/', include('rest_framework.urls'))
 ]
+urlpatterns += staticfiles_urlpatterns()
