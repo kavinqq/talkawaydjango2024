@@ -11,6 +11,8 @@ services:
       MYSQL_USER: talkaway_admin
       MYSQL_PASSWORD: talkaway@2024
     restart: always
+    networks:
+      - mynetwork
 
   web:
     build: .
@@ -21,7 +23,8 @@ services:
       - "8068:8068"
     depends_on:
       - db
-
+    networks:
+      - mynetwork
 
   nginx:
     container_name: nginx-container
@@ -35,6 +38,12 @@ services:
       - "80:80"       
     depends_on:
       - web
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    external: true
 
 volumes:
   db_data:
