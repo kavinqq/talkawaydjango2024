@@ -29,5 +29,5 @@ class ChatWithGPTSerializer(serializers.Serializer):
     )
 
     @property
-    def validated_data(self, attrs) -> ChatWithGPTTypedDict:
+    def validated_data(self) -> ChatWithGPTTypedDict:
         return self._validated_data

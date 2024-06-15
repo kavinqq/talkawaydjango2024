@@ -52,7 +52,7 @@ class ChatWithGPTAPIView(GenericAPIView):
                     description="初次對話",
                     value={
                         "chat_id": None,
-                        "scenario": "情景",
+                        "scenario": "Imagine you are in a coffee shop in Seattle, and a person (male/female) starts talking to you.",
                         "input_text": None
                     }
                 ),
@@ -62,7 +62,7 @@ class ChatWithGPTAPIView(GenericAPIView):
                     value={
                         "chat_id": "20240615_1234",
                         "scenario": None,
-                        "input_text": "用戶輸入"
+                        "input_text": "Hi, how are you?"
                     }
                 )
             ]
@@ -80,7 +80,7 @@ class ChatWithGPTAPIView(GenericAPIView):
                                 data={
                                     "chat_id": "20240615_1234",
                                     "content": "Hello, how are you?",
-                                    "tts": "base64 encoded audio"
+                                    "tts": "base64 encode string with utf-8"
                                 }
                             )
                         ]
@@ -100,10 +100,12 @@ class ChatWithGPTAPIView(GenericAPIView):
         validated_data = ser.validated_data
         chat_id = validated_data.get("chat_id")
         scenario = validated_data.get("scenario")
-        input_text = validated_data.get("input_text")        
+        input_text = validated_data.get("input_text")
+        
+        if not chat_id and not scenario and not input_text:
+            return Response(ResponseEnum.UNEXPECTED_ERROR.response(data="至少需要一個參數"))
         
         gpt_helper = ChatHelper()
-        tts_helper = TTSHelper()
 
         if chat_id:
             chat = Chat.objects.get(chat_id=chat_id)
@@ -131,7 +133,12 @@ class ChatWithGPTAPIView(GenericAPIView):
 
             self._gen_history(chat, history)            
 
-        tts_bytes = tts_helper.text_to_speech_bytes(gpt_response)
+        try:
+            tts_helper = TTSHelper()
+            tts_bytes = tts_helper.text_to_speech_bytes(gpt_response)
+        except Exception as e:
+            logger.info(e, exc_info=True)
+            return Response(ResponseEnum.UNEXPECTED_ERROR.response(data=None))
 
         payload = {
             "chat_id": chat_id,
