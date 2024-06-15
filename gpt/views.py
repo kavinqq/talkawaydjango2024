@@ -1,20 +1,31 @@
 import logging
-import datetime
+from typing import List
 
-from django.conf import settings
+from django.utils import timezone
 
 import nanoid
 from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST
-from openai import OpenAI
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+    OpenApiRequest,
+    OpenApiResponse
+)
 
-
+from open_ai_helper.gpt_chat import ChatHelper
+from open_ai_helper.gpt_tts import TTSHelper
 from gpt.serializers import ChatWithGPTSerializer
 from gpt.models import (
-    Session,
-    SessionInteractions
+    Chat,
+    ChatHistory
+)
+from constants.response_enum import (
+    ResponseEnum,
+    ResponseSerializer
 )
 
 
@@ -22,114 +33,123 @@ logger = logging.getLogger(__name__)
 
 
 class ChatWithGPTAPIView(GenericAPIView):
-    serializer_class = ChatWithGPTSerializer
-    chat_gpt_model = "gpt-3.5-turbo"
+    serializer_class = ChatWithGPTSerializer    
+    default_condition = f"""
+        I'm providing a scenario for a simulated conversation,
+        and I would like to chat with you based on this scenario.
+        However, I want you to randomly choose one of the roles in the scenario
+        and initiate the conversation from that perspective.
+        Please start the conversation with a single opening line from the chosen role's viewpoint in English.
+        Final, don't need to specify who speak just chat like a person.
+    """
 
-    def post(self, request):
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-
+    @extend_schema(
+        request=OpenApiRequest(            
+            request=ChatWithGPTSerializer,
+            examples=[
+                OpenApiExample(
+                    name="初次對話",
+                    description="初次對話",
+                    value={
+                        "chat_id": None,
+                        "scenario": "情景",
+                        "input_text": None
+                    }
+                ),
+                                OpenApiExample(
+                    name="接續對話",
+                    description="接續對話",
+                    value={
+                        "chat_id": "20240615_1234",
+                        "scenario": None,
+                        "input_text": "用戶輸入"
+                    }
+                )
+            ]
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="成功",
+                response=ResponseSerializer,
+                examples=[
+                    OpenApiExample(
+                        name="成功",
+                        description="成功",
+                        value=[
+                            ResponseEnum.SUCCESS.response(
+                                data={
+                                    "chat_id": "20240615_1234",
+                                    "content": "Hello, how are you?",
+                                    "tts": "base64 encoded audio"
+                                }
+                            )
+                        ]
+                    )
+                ]
+            )
+        }
+    )
+    def post(self, request: Request):
         try:
-            ser = self.serializer_class(data=request.data)                        
+            ser = self.serializer_class(data=request.data)
             ser.is_valid(raise_exception=True)
-
-            session_id = ser.validated_data.get("session_id")
-            scenario = ser.validated_data.get("scenario")
-            input_text = ser.validated_data.get("input_text")
         except serializers.ValidationError as e:
-            logger.info(e.detail)
+            logger.info(e.detail, exc_info=True)
             return Response(e.detail, status=HTTP_400_BAD_REQUEST)
 
-        # 持續談話
-        if session_id:
-            session = Session.objects.get(session_id=session_id)
+        validated_data = ser.validated_data
+        chat_id = validated_data.get("chat_id")
+        scenario = validated_data.get("scenario")
+        input_text = validated_data.get("input_text")        
+        
+        gpt_helper = ChatHelper()
+        tts_helper = TTSHelper()
 
-            interactions = session.interactions.all().order_by('created_at')
-
-            messages = []
-            for interaction in interactions:
-                if interaction.gpt_response:
-                    messages.append(
-                        {
-                            "role": "system",
-                            "content": interaction.gpt_response
-                        }
-                    )
-                if interaction.user_input:
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": interaction.user_input
-                        }
-                    )
-
-            messages.append(
-                {
-                    "role": "system",
-                    "content": input_text
-                }
-            )
-        else:
-            # 替代情景中的詞彙
-            # scenario = scenario.replace("想像你", "想像我").replace("想像", "想像我")
-            # logger.info(f"{scenario=}")
-            
-            # 詢問條件
-            request_condition = f"""
-               I'm providing a scenario for a simulated conversation,
-               and I would like to chat with you based on this scenario.
-               However, I want you to randomly choose one of the roles in the scenario
-               and initiate the conversation from that perspective.
-               Please start the conversation with a single opening line from the chosen role's viewpoint, in English.  
-               Final, don't need to specify who speak just chat like a person.
-            """
+        if chat_id:
+            chat = Chat.objects.get(chat_id=chat_id)
 
             messages = [
                 {
-                    "role": "system",
-                    "content": f"{scenario}. {request_condition}"
+                    "role": data.role,
+                    "content": data.content
                 }
-            ]
+                for data in chat.history.order_by('created_at')
+            ]          
+
+            gpt_response, history = gpt_helper.chat(
+                user_input=input_text,
+                history=messages
+            )
             
-            session_id = f"{datetime.datetime.now().strftime('%Y%m%d')}-{nanoid.generate(size=6)}"                        
+            self._gen_history(chat, history[-2:])
+        else:
+            gpt_response, history = gpt_helper.chat(system=f"{self.default_condition}\nScenario:{scenario}")
             
-            session = Session.objects.create(
-                        session_id=session_id,
-                        scenario=scenario                
-                    )                    
-        
-        # 根據gpt-3.5-turbo模型回應建立一個新的互動
-        new_interaction = SessionInteractions.objects.create(
-                            session=session,
-                            gpt_response="",
-                            user_input=input_text
-                        )
+            chat = Chat.objects.create(
+                chat_id=f"{timezone.localtime().strftime('%Y%m%d')}_{nanoid.generate(size=4)}",
+            )            
 
-        response = client.chat.completions.create(
-            model=self.chat_gpt_model,
-            messages=messages,
-            max_tokens=100
-        )
+            self._gen_history(chat, history)            
 
-        # 解析回傳的結果
-        result_list = []
-        for choice in response.choices:
-            result_list.append(choice.message.content)
+        tts_bytes = tts_helper.text_to_speech_bytes(gpt_response)
 
-        # combine gpt response
-        result = "".join(result_list)
-
-        # store gpt response
-        new_interaction.gpt_response = result
-        new_interaction.save()
-
-        # return data
         payload = {
-            "code": "000",
-            "message": "success",
-            "data": {
-                "session_id": session_id,
-                "gpt_response": result
-            }
+            "chat_id": chat_id,
+            "content": gpt_response,
+            "tts":tts_bytes
         }
 
-        return Response(payload)
+        return Response(ResponseEnum.SUCCESS.response(data=payload))
+    
+    def _gen_history(self, chat: Chat, history: List[dict]) -> None:
+        history_create_list = [
+            ChatHistory(
+                chat=chat,
+                role=data.get("role"),
+                content=data.get("content"),
+            )
+            for data in history
+        ]
+        ChatHistory.objects.bulk_create(history_create_list)
+        
+        return None

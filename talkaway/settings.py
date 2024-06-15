@@ -4,7 +4,7 @@ import openai
 from pathlib import Path
 
 try:
-    from talkaway.local_setting import *
+    from .local_setting import *
 except ImportError:
     raise Exception("Missing local_setting.py file!!")
 
@@ -26,7 +26,6 @@ ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
-
 INSTALLED_APPS = [
     # Django apps
     'django.contrib.admin',
@@ -36,6 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Third-party apps
+    'drf_spectacular_sidecar',
+    'drf_spectacular',
     'rest_framework',
     'gcp',
     'gpt',
@@ -70,6 +71,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'talkaway.wsgi.application'
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
 
 
 # Database
@@ -126,9 +131,10 @@ STATIC_ROOT = '/var/www/django/talkaway/collected_static'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Timezone
 TIME_ZONE = "Asia/Taipei"
+USE_TZ = True
 
-openai.api_key = OPENAI_API_KEY
 
 # create log folder
 LOG_FOLDER_PATH = Path(BASE_DIR.parent, 'logs', 'talkaway')
@@ -166,7 +172,7 @@ LOGGING = {
             'formatter': 'standard',
             'encoding': 'utf-8',
             'when': 'midnight'
-        },        
+        },
         'warn': {
             'level': 'WARN',
             'class': 'custom_log.rotating_log.CommonTimedRotatingFileHandler',
@@ -179,18 +185,33 @@ LOGGING = {
         'error': {
             'level': 'ERROR',
             'class': 'custom_log.rotating_log.CommonTimedRotatingFileHandler',
-            'filename': os.path.join(LOG_FOLDER_PATH, "error.log"), 
+            'filename': os.path.join(LOG_FOLDER_PATH, "error.log"),
             'backupCount': 30,
             'formatter': 'standard',
             'encoding': 'utf-8',
             'when': 'midnight'
-        },        
+        },
     },
     'loggers': {
         '':{
             'handlers': ['console', 'default', 'warn', 'error'],
             'level': 'INFO',
             'propagate': False
-        },        
+        },
     },
 }
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Talkaway',
+    'DESCRIPTION': 'Anytime Anywhere',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+}
+
+
+# OpneAI API Key
+openai.api_key = OPENAI_API_KEY
