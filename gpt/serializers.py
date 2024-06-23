@@ -6,6 +6,7 @@ class ChatWithGPTTypedDict(TypedDict):
     chat_id: str
     scenario: str
     user_input: str
+    user_input_base64: str
 
 
 class ChatWithGPTSerializer(serializers.Serializer):
@@ -23,6 +24,12 @@ class ChatWithGPTSerializer(serializers.Serializer):
     )
     user_input = serializers.CharField(
         help_text="用戶輸入",
+        allow_null=True,
+        allow_blank=True,
+        required=False
+    )
+    user_input_base64 = serializers.CharField(
+        help_text="用戶輸入的base64語音",
         allow_null=True,
         allow_blank=True,
         required=False
