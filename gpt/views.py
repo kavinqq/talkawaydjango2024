@@ -65,7 +65,7 @@ class ChatWithGPTAPIView(GenericAPIView):
                     value={
                         "chat_id": "20240615_1234",
                         "scenario": None,
-                        "user_input": "Hi, how are you?"
+                        "user_input_base64": "User voice base64 string..."
                     }
                 )
             ]
@@ -138,7 +138,7 @@ class ChatWithGPTAPIView(GenericAPIView):
             chat = Chat.objects.create(
                 chat_id=chat_id,
             )
-
+            
             self._gen_history(chat, history)
 
         try:
@@ -166,7 +166,7 @@ class ChatWithGPTAPIView(GenericAPIView):
         conditions = {
             (not chat_id and not scenario):
                 "如果沒有提供 chat_id，則 scenario 必須提供。",
-            (chat_id and (user_input or user_input_base64)):
+            (chat_id and (not (user_input or user_input_base64))):
                 "如果有提供 chat_id，則 user_input 或 user_input_base64 必須提供其一。"
         }
         for condition, message in conditions.items():
