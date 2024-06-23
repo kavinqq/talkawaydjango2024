@@ -131,10 +131,12 @@ class ChatWithGPTAPIView(GenericAPIView):
 
             self._gen_history(chat, history[-2:])
         else:
+            chat_id = f"{timezone.localtime().strftime('%Y%m%d')}_{nanoid.generate(size=4)}"
+            
             gpt_response, history = gpt_helper.chat(system=f"{self.default_condition}\nScenario:{scenario}")
-
+            
             chat = Chat.objects.create(
-                chat_id=f"{timezone.localtime().strftime('%Y%m%d')}_{nanoid.generate(size=4)}",
+                chat_id=chat_id,
             )
 
             self._gen_history(chat, history)
