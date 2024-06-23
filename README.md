@@ -1,7 +1,7 @@
 # Django Project
 
 ## Project Description
-Improve your English speaking skills with ChatGPT!!!
+Help you improver English speaking skill with ChatGPT!
 
 ## Quick Start
 Follow these simple steps to get the project up and running:
@@ -11,13 +11,10 @@ Follow these simple steps to get the project up and running:
 
 ### Installation
 1. **Clone the Repository**:
+    
+2. cd to the project-folder
 
-    ```sh
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
-    ```
-
-2. **Run Docker Compose**:
+3. **Run Docker Compose**:
 
     ```sh
     docker-compose up
