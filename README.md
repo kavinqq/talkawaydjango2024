@@ -1,7 +1,7 @@
 # Django Project
 
 ## Project Description
-Help you improver English speaking skill with ChatGPT!
+Improve your English speaking skills with ChatGPT!!!
 
 ## Quick Start
 Follow these simple steps to get the project up and running:
