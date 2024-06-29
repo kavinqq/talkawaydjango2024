@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'drf_spectacular_sidecar',
     'drf_spectacular',
     'rest_framework',
-    'gcp',
     'gpt',
 ]
 

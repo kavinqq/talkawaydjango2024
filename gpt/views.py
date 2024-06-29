@@ -83,7 +83,8 @@ class ChatWithGPTAPIView(GenericAPIView):
                                 data={
                                     "chat_id": "20240615_1234",
                                     "content": "Hello, how are you?",
-                                    "tts": "base64 encode string with utf-8(GPT回覆的語音)"
+                                    "tts": "base64 encode string with utf-8(GPT回覆的語音)",
+                                    "user_input": "Hello, how are you?"
                                 }
                             )
                         ]
@@ -106,7 +107,12 @@ class ChatWithGPTAPIView(GenericAPIView):
         user_input = validated_data.get("user_input")
         user_input_base64 = validated_data.get("user_input_base64")
 
-        check_result, check_msg = self._check_input_param(chat_id, scenario, user_input, user_input_base64)
+        check_result, check_msg = self._check_input_param(
+            chat_id=chat_id,
+            scenario=scenario,
+            user_input=user_input,
+            user_input_base64=user_input_base64
+        )
         if check_result is False:
             return Response(ResponseEnum.SUCCESS.response(data=check_msg), status=HTTP_400_BAD_REQUEST)
         
@@ -149,9 +155,10 @@ class ChatWithGPTAPIView(GenericAPIView):
             return Response(ResponseEnum.UNEXPECTED_ERROR.response(data=None), status=HTTP_400_BAD_REQUEST)
 
         payload = {
+            "tts":tts_bytes,
             "chat_id": chat_id,
             "content": gpt_response,
-            "tts":tts_bytes
+            "user_input": user_input
         }
 
         return Response(ResponseEnum.SUCCESS.response(data=payload))
@@ -166,7 +173,7 @@ class ChatWithGPTAPIView(GenericAPIView):
         conditions = {
             (not chat_id and not scenario):
                 "如果沒有提供 chat_id，則 scenario 必須提供。",
-            (chat_id and (not (user_input or user_input_base64))):
+            (chat_id and not (user_input or user_input_base64)):
                 "如果有提供 chat_id，則 user_input 或 user_input_base64 必須提供其一。"
         }
         for condition, message in conditions.items():
@@ -201,4 +208,4 @@ class ChatWithGPTAPIView(GenericAPIView):
         user_input = stt_helper.speech_to_text(audio_file)
         
         return user_input    
-    
+ 
