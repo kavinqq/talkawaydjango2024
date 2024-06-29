@@ -13,7 +13,6 @@ from drf_spectacular.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/gcp/', include('gcp.urls')),
     path('api/gpt/', include('gpt.urls')),
     path('api-auth/', include('rest_framework.urls')),
 ]
